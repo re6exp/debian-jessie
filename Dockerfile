@@ -1,8 +1,6 @@
-# Oracle JRE 8 for Debian Jessie
+# Debian Jessie
 #
-# URL: https://github.com/re6exp/debian-jessie-oracle-jre-8
-#
-# Reference:  http://www.duinsoft.nl/packages.php?t=en
+# URL: https://github.com/re6exp/debian-jessie
 #
 # Version     0.1
 #
@@ -10,11 +8,10 @@
 
 FROM debian:jessie
 
-# Space separated list of first part encoding type in /etc/locale.gen
+# Space separated list of first part encoding type in /etc/locale.gen.
+# Locale should be in format: < locale_name.encoding >.
 
-ENV LOCALES_DEF ru_RU.UTF-8 en_US.UTF-8
-
-ENV LOCALE_BASE ''
+ENV LOCALES_DEF ru_RU.UTF-8 en_US.UTF-8 fr_FR.UTF-8 de_DE.UTF-8
 
 
 RUN echo " Update packages and install locales dpkg:" && \
@@ -28,18 +25,28 @@ RUN echo " Update packages and install locales dpkg:" && \
 # Uncomment the necessary locales (LOCALES_DEF)
 
 RUN echo " Set locales:" && \
-    sed -i '/^\s/s/^/#/g' /etc/locale.gen &&\
+    \
     set -- junk $LOCALES_DEF \
     shift; \
-    for THE_LOCALE in $LOCALES_DEF; \
-        do sed -i "/$THE_LOCALE/s/^#//"  /etc/locale.gen ;\
-    done ;\
     \
-    locale-gen && update-locale $LOCALE_BASE && cat /etc/locale.gen
+    for THE_LOCALE in $LOCALES_DEF; do \
+        \
+        set --  $(echo $THE_LOCALE  |  awk -F'.' '{ print $1, $2 }');  \
+        \
+        INPUT_FILE=$1;  \
+        CHARMAP_FILE=$2;  \
+        \
+        localedef  --no-archive -c -i $INPUT_FILE -f $CHARMAP_FILE $THE_LOCALE; \
+    done ; \
+    \
+    locale-gen  &&  \
+    \
+    echo "generated locales are:" && locale -a  \
+    echo "locale set to:" && locale
     
 RUN echo " Clean up:"  && \
-    rm -rf /var/cache/update-sun-jre  && \
     apt-get clean  && \
     rm -rf /var/lib/apt/lists/*
 
-CMD [""]
+
+CMD ["/bin/bash"]
